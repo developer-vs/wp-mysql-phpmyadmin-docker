@@ -1,0 +1,18 @@
+# Environment variables (security risk if committed)
+# .env
+
+# Ignore everything in srv (database & WordPress files)
+srv/
+!srv/custom.ini
+
+# Optional: Ignore container-specific files
+*.log
+*.pid
+
+# Ignore Docker-related files (optional)
+docker-compose.override.yml
+
+*.zip
+
+# System files
+.DS_Store

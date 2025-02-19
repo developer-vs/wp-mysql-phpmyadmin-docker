@@ -1,0 +1,54 @@
+services:
+  mysql:
+    image: mysql:5.7
+    container_name: mysql_db
+    restart: always
+    ports:
+      - "3306:3306"  # Host port 3306 maps to MySQL container port 3306
+    volumes:
+      - ./srv/db_data:/var/lib/mysql  # Store MySQL data on the host so it persists
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}  # Set MySQL root password
+      MYSQL_DATABASE: ${MYSQL_DATABASE}  # The database WordPress will use
+      MYSQL_USER: ${MYSQL_USER}  # MySQL user for WordPress
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}  # Password for MySQL user
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress_app
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy  # Wait for MySQL to be ready before starting WordPress
+    ports:
+      - "8080:80"  # Host port 8080 maps to WordPress container port 80
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306  # Connect to MySQL using the MySQL container's name and port
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_DEBUG: 1  # Enable debugging for WordPress (optional)
+    volumes:
+      - ./srv/wordpress:/var/www/html  # Store WordPress files on the host so they persist
+      - ./plugins/custom-plugin:/var/www/html/wp-content/plugins/custom-plugin
+      - ./themes/underscores:/var/www/html/wp-content/themes/underscores
+      - ./srv/custom.ini:/usr/local/etc/php/conf.d/custom.ini
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8081:80"
+    environment:
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      PMA_HOST: mysql
